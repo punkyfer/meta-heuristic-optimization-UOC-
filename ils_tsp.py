@@ -13,6 +13,15 @@ class Node:
     def __repr__(self) -> str:
         return str(self.id)
     
+    def __lt__(self, other):
+        return self.id < other.id
+    
+    def __eq__(self, other):
+        return self.id == other.id
+    
+    def __hash__(self):
+        return hash((self.id, self.x, self.y))
+    
 class Route:
     def __init__(self):
         self.edges = []
@@ -29,52 +38,27 @@ class Route:
     
     def __repr__(self) -> str:
         return str(self.edges)
+    
+    def has_duplicates(self, nodes):
+        route_nodes = []
+        for edge in self.edges:
+            route_nodes.append(edge[0])
+        route_nodes.append(self.edges[-1][1])
+
+        route_nodes.sort()
+        original_nodes = nodes.copy()
+        original_nodes.sort()
+
+        return route_nodes != original_nodes
+
 
 def dist(node_1: Node, node_2: Node):
     return math.sqrt((node_1.x - node_2.x)**2 + (node_1.y - node_2.y)**2)
 
-def get_greedy_random_solution(original_nodes, dist_matrix):
-    nodes = original_nodes.copy()
-    route = Route()
-    starting_node = nodes.pop(random.randint(0, len(nodes)-1))
-
-    while len(nodes) > 0:
-        elements_distance = []
-        max_distance = 0
-        for node in nodes:
-            node_distance = dist_matrix[starting_node.id][node.id]
-            elements_distance.append((node, node_distance))
-            if node_distance > max_distance:
-                max_distance = node_distance
-
-        # Pure Greedy
-        # elements_distance.sort(key = lambda x: x[1], reverse=False)
-        # random_node = elements_distance[0][0]
-        
-        # Greedy Random
-        possible_nodes = []
-        probabilities = []
-        for elem in elements_distance:
-            possible_nodes.append(elem[0])
-            probabilities.append(1-(elem[1]/(max_distance+1)))
-
-        if probabilities == [0.0]:
-            random_node = nodes[0]
-        else:
-            random_node = random.choices(possible_nodes, weights = probabilities, k=1)[0]
-
-        route.edges.append((starting_node, random_node))
-        route.cost += dist_matrix[starting_node.id][random_node.id]
-        nodes.remove(random_node)
-        starting_node = random_node
-
-    route.edges.append((route.edges[-1][1], route.edges[0][0]))
-    return route
-
-def local_search_2_opt(route, dist_matrix, max_iters = 1000):
+def local_search_2_opt(route, dist_matrix, max_iters = 50):
     num_iters = 0
     best_route = Route()
-    best_route.edges = route.edges
+    best_route.edges = route.edges.copy()
     best_route.cost = route.cost
     while num_iters < max_iters:
         num_iters += 1
@@ -107,16 +91,55 @@ def local_search_2_opt(route, dist_matrix, max_iters = 1000):
             best_route = Route()
             best_route.edges = route.edges.copy()
             best_route.cost = route.cost
+            num_iters = 0
         else:
             break
     return best_route
 
+def construct_initial_solution(nodes, dist_matrix):
+    random.shuffle(nodes)
+    route = Route()
+    for i in range(len(nodes)-1):
+        route.edges.append((nodes[i], nodes[i+1]))
+        route.cost += dist_matrix[nodes[i].id][nodes[i+1].id]
+    return route
 
+def perturbation(route, dist_matrix, random_segments=4):
+
+    new_route = Route()
+    new_route.edges = route.edges.copy()
+
+    start_index = random.randint(0, len(new_route.edges)-(1+random_segments))
+
+    nodes = set()
+    for i in range(random_segments):
+        nodes.add(new_route.edges[start_index+i][0])
+        nodes.add(new_route.edges[start_index+i][1])
+    
+    new_nodes = list(nodes)
+
+    random.shuffle(new_nodes)
+
+    for i in range(len(new_nodes)-1):
+        new_route.edges[start_index+i] = (new_nodes[i], new_nodes[i+1])
+
+    if start_index > 0:
+        new_route.edges[start_index-1] = (new_route.edges[start_index-1][0], new_nodes[0])
+
+    if start_index+random_segments < len(new_route.edges):
+        new_route.edges[start_index+random_segments] = (new_nodes[-1], new_route.edges[start_index+random_segments][1])
+        
+    new_route.recompute_cost(dist_matrix)
+
+    return new_route
     
 
 if __name__ == "__main__":
 
     filename = "berlin52.txt"
+
+    max_iterations = 10000
+    max_no_improve_iterations = 1000
 
     # Load file
     with open(filename) as instance:
@@ -134,21 +157,21 @@ if __name__ == "__main__":
                 dist_matrix[i][j] = dist(node_1, node_2)
                 dist_matrix[j][i] = dist_matrix[i][j]
 
-    greedy_sol = get_greedy_random_solution(nodes, dist_matrix)
-    local_search_solution = local_search_2_opt(greedy_sol, dist_matrix)
+    initial_sol = construct_initial_solution(nodes, dist_matrix)
+    local_search_solution = local_search_2_opt(initial_sol, dist_matrix, max_no_improve_iterations)
 
     best_sol = local_search_solution
 
-    for i in range(1000):
-        greedy_sol = get_greedy_random_solution(nodes, dist_matrix)
-        local_search_solution = local_search_2_opt(greedy_sol, dist_matrix)
-        if local_search_solution.cost < best_sol.cost:
-            best_sol = local_search_solution
-
+    for i in range(max_iterations):
+        new_sol = perturbation(best_sol, dist_matrix, 4)
+        new_sol = local_search_2_opt(new_sol, dist_matrix, max_no_improve_iterations)
+        if new_sol.cost < best_sol.cost:
+            best_sol = new_sol
+        
     print("Instance Name: "+filename.split(".")[0])
     print("-------------------------------------")
-    print("Greedy Random solution")
-    print(greedy_sol)
+    print("Initial Random solution")
+    print(initial_sol)
     print("-------------------------------------")
-    print("GRASP solution")
+    print("ILS solution")
     print(best_sol)

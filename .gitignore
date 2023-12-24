@@ -1,0 +1,6 @@
+data/*
+pfsp_data/*
+*.dat
+diet.py
+__pycache__/
+.ipynb_checkpoints/

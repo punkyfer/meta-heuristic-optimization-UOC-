@@ -29,14 +29,6 @@ def random_search(basin_function, searchSpace, problemSize, maxIterations = 1000
 if __name__ == "__main__":
     print("Random Search Algorithm")
     print("---------------------------------------------------------")
-    print("Basin Function: f(x) = sum(a(x_i - h)² + k) for i=1,...,n")
-    searchSpace = [-5, 5]
-    problemSize = 2
-    start = time.time()
-    cost, sol = random_search(basin_function_1, searchSpace, problemSize)
-    end = time.time()
-    print(f"Cost = {cost} \nSolution = {sol} \nTime taken = {end-start}")
-    print("---------------------------------------------------------")
     print("Basin Function: f(x) = sum(x_i²) for i=1,...,n")
     searchSpace = [-5, 5]
     problemSize = 2
@@ -44,3 +36,12 @@ if __name__ == "__main__":
     cost, sol = random_search(basin_function_2, searchSpace, problemSize)
     end = time.time()
     print(f"Cost = {cost} \nSolution = {sol} \nTime taken = {end-start}")
+    print("---------------------------------------------------------")
+    print("Basin Function: f(x) = sum(a(x_i - h)² + k) for i=1,...,n")
+    searchSpace = [-5, 5]
+    problemSize = 2
+    start = time.time()
+    cost, sol = random_search(basin_function_1, searchSpace, problemSize)
+    end = time.time()
+    print(f"Cost = {cost} \nSolution = {sol} \nTime taken = {end-start}")
+    

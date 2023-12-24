@@ -37,7 +37,7 @@ def dist(node_1: Node, node_2: Node):
     return math.sqrt((node_1.x - node_2.x)**2 + (node_1.y - node_2.y)**2)
 
 
-def compute_efficiency(node_i:Node, node_j:Node, start:Node, finish:Node, dist_matrix):
+def compute_efficiency(node_i:Node, node_j:Node, start:Node, finish:Node, alpha, dist_matrix):
     savings = dist_matrix[start.id][node_i.id] + dist_matrix[finish.id][node_j.id] - dist_matrix[node_i.id][node_j.id]
     reward = node_i.demand + node_j.demand
     return alpha * savings + (1-alpha) * reward
@@ -84,7 +84,7 @@ def pjs_top_algorithm(fileName, alpha, plot_graph=False, print_sols = False):
     savings = []
     for node_i in nodes[1:-2]:
         for node_j in nodes[node_i.id+1:-1]:
-            savings.append((node_i, node_j, compute_efficiency(node_i, node_j, start, finish, dist_matrix)))
+            savings.append((node_i, node_j, compute_efficiency(node_i, node_j, start, finish, alpha, dist_matrix)))
 
     savings.sort(key = lambda x: x[2], reverse=True)
 
@@ -172,12 +172,14 @@ def pjs_top_algorithm(fileName, alpha, plot_graph=False, print_sols = False):
 
     routes.sort(key = operator.attrgetter("demand"), reverse=True)
     total_cost = 0
-    max_cost = 0
+    max_route_cost = 0
+    total_route_cost = 0
     for route in routes[:fleetSize]:
         total_cost += route.demand
         route_cost = compute_route_cost(route, dist_matrix)
-        if route_cost > max_cost:
-            max_cost = route_cost
+        total_route_cost += route_cost
+        if route_cost > max_route_cost:
+            max_route_cost = route_cost
         if print_sols:
             print(f"{route}, Cost: {compute_route_cost(route, dist_matrix):.2f}")
 
@@ -193,15 +195,22 @@ def pjs_top_algorithm(fileName, alpha, plot_graph=False, print_sols = False):
         coord = nx.get_node_attributes(G, "coord")
         nx.draw_networkx(G, coord, node_color="pink")
         plt.savefig(plot_graph, dpi=300, bbox_inches='tight')
-    return total_cost, num_nodes, fleetSize, routeMaxCost, max_cost, end_time-start_time
+    return total_cost, num_nodes, fleetSize, routeMaxCost, max_route_cost, total_route_cost, end_time-start_time
 
 if __name__ == "__main__":
     alpha_values = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
     fileNames = [f for f in glob.glob('data/p*.txt')]
+    fileNames = ["data/p4.4.l.txt", "data/p3.3.l.txt", "data/p5.4.q.txt"]
+
+    image_name = fileNames[1].split("/")[1].replace(".", "_")[:-4]
+    print("Instance Name: p5.4.q")
+    print("-------------------------------------")
+    pjs_top_algorithm(fileNames[2], 0.7, False, True)
+    print("")
     # "pjs_top_"+instance.replace(".","_")
-    print("Instance,alpha,# nodes,fleetSize,routeMaxCost,solMaxCost,PJS Sol.,Time (s)")
+    print("Instance,alpha,# nodes,fleetSize,routeMaxCost,maxRouteCostFound,totalRouteCostFound, PJS Sol.,Time (s)")
     for fileName in fileNames:
         for alpha in alpha_values:
-            total_cost, num_nodes, fleetSize, routeMaxCost, max_cost_found, time_taken = pjs_top_algorithm(fileName, alpha, False, False)
-            print(f"{fileName[5:-4]},{alpha},{num_nodes},{fleetSize},{routeMaxCost:.2f},{max_cost_found:.2f},{total_cost:.2f},{time_taken:.3f}")
+            total_cost, num_nodes, fleetSize, routeMaxCost, max_route_cost, total_route_cost, time_taken = pjs_top_algorithm(fileName, alpha, False, False)
+            print(f"{fileName[5:-4]},{alpha},{num_nodes},{fleetSize},{routeMaxCost:.2f},{max_route_cost:.2f},{total_route_cost:.2f},{total_cost:.2f},{time_taken:.3f}")

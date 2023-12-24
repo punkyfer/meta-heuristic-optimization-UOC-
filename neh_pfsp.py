@@ -37,7 +37,7 @@ class Solution:
                     times[row][column] = max_time + self.jobs[row].processing_times[column]
         return times[num_rows-1][num_cols-1]
     
-def compute_e_matrix(sol:Solution, k):
+def compute_e_matrix(sol, k):
     num_rows = k
     num_cols = sol.num_machines
     e = [[0 for j in range(num_cols)] for i in range(num_rows)]
@@ -51,7 +51,7 @@ def compute_e_matrix(sol:Solution, k):
                 e[i][j] = max_time + sol.jobs[i].processing_times[j]
     return e
 
-def compute_q_matrix(sol:Solution, k):
+def compute_q_matrix(sol, k):
     num_rows = k+1
     num_cols = sol.num_machines
     q = [[0 for j in range(num_cols)] for i in range(num_rows)]
@@ -70,7 +70,7 @@ def compute_q_matrix(sol:Solution, k):
                 q[i][j] = max_time + sol.jobs[i].processing_times[j]
     return q
 
-def compute_f_matrix(sol:Solution, k, e):
+def compute_f_matrix(sol, k, e):
     num_rows = k+1
     num_cols = sol.num_machines
     f = [[0 for j in range(num_cols)] for i in range(num_rows)]
@@ -88,7 +88,7 @@ def compute_f_matrix(sol:Solution, k, e):
     return f
 
     
-def improve_by_shifting_job_to_left(sol:Solution, k):
+def improve_by_shifting_job_to_left(sol, k):
     best_position = k
     min_makespan = float("inf")
     e_matrix = compute_e_matrix(sol, k)
@@ -123,8 +123,11 @@ def improve_by_shifting_job_to_left(sol:Solution, k):
 if __name__ == "__main__":
 
     instance_name = "tai117_500_20"
+    #instance_name = "tai109_200_20"
+    #instance_name = "tai084_100_20"
+    #instance_name = "tai044_50_10"
 
-    file_name = f"pfsp_data/{instance_name}_inputs.txt"
+    file_name = "pfsp_data/"+instance_name+"_inputs.txt"
 
     with open(file_name) as instance:
         i = -3
@@ -156,7 +159,7 @@ if __name__ == "__main__":
 
     t_end = time.time()
 
-    print(f"Instance: {instance_name} with {num_jobs} jobs and {num_machines} machines")
+    print("Instance: "+instance_name+" with "+str(num_jobs)+" jobs and "+str(num_machines)+" machines")
     print("NEH makespan with Taillard acceleration =", "{:.{}f}".format(sol.makespan, 2))
     print("NEH verification with traditional method:", "{:.{}f}".format(sol.compute_makespan(), 2))
     print("Computational time:", "{:.{}f}".format(t_end-t_start, 1), "sec.")
